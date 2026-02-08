@@ -3,6 +3,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const filterCategory = document.getElementById("filter-category");
+  const sortActivities = document.getElementById("sort-activities");
+
+  // Helper to update filter options based on available categories
+  function updateFilterOptions(activities) {
+    const categories = Array.from(new Set(Object.values(activities).map(a => a.category || "Other")));
+    filterCategory.innerHTML = '<option value="">All</option>';
+    categories.forEach(cat => {
+      filterCategory.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+  }
+
+  // Initial filter options setup
+  fetch("/activities").then(res => res.json()).then(activities => {
+    updateFilterOptions(activities);
+  });
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -12,14 +28,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = "";
+
+      // Get filter and sort values
+      const selectedCategory = filterCategory.value;
+      const selectedSort = sortActivities.value;
+
+      // Convert activities to array for sorting/filtering
+      let activityArray = Object.entries(activities).map(([name, details]) => ({ name, ...details }));
+
+      // Filter by category if set and category exists
+      if (selectedCategory) {
+        activityArray = activityArray.filter(act => (act.category || "Other") === selectedCategory);
+      }
+
+      // Sort
+      if (selectedSort === "name") {
+        activityArray.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (selectedSort === "availability") {
+        activityArray.sort((a, b) => {
+          const aSpots = a.max_participants - a.participants.length;
+          const bSpots = b.max_participants - b.participants.length;
+          return aSpots - bSpots;
+        });
+      }
 
       // Populate activities list
-      Object.entries(activities).forEach(([name, details]) => {
+      activityArray.forEach((details) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft =
-          details.max_participants - details.participants.length;
+        const spotsLeft = details.max_participants - details.participants.length;
 
         // Create participants HTML with delete icons instead of bullet points
         const participantsHTML =
@@ -30,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${details.name}" data-email="${email}">❌</button></li>`
                   )
                   .join("")}
               </ul>
@@ -38,9 +77,10 @@ document.addEventListener("DOMContentLoaded", () => {
             : `<p><em>No participants yet</em></p>`;
 
         activityCard.innerHTML = `
-          <h4>${name}</h4>
+          <h4>${details.name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <p><strong>Category:</strong> ${details.category || "Other"}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-container">
             ${participantsHTML}
@@ -51,8 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Add option to select dropdown
         const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
+        option.value = details.name;
+        option.textContent = details.name;
         activitySelect.appendChild(option);
       });
 
@@ -156,5 +196,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Initialize app
+  // Add filter/sort event listeners
+  filterCategory.addEventListener("change", fetchActivities);
+  sortActivities.addEventListener("change", fetchActivities);
   fetchActivities();
 });
