@@ -9,9 +9,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // Helper to update filter options based on available categories
   function updateFilterOptions(activities) {
     const categories = Array.from(new Set(Object.values(activities).map(a => a.category || "Other")));
-    filterCategory.innerHTML = '<option value="">All</option>';
-    categories.forEach(cat => {
-      filterCategory.innerHTML += `<option value="${cat}">${cat}</option>`;
+
+    // Clear existing options
+    filterCategory.innerHTML = "";
+
+    // Add default "All" option
+    const allOption = document.createElement("option");
+    allOption.value = "";
+    allOption.textContent = "All";
+    filterCategory.appendChild(allOption);
+
+    // Add one option per category using safe DOM APIs
+    categories.forEach((cat) => {
+      const option = document.createElement("option");
+      option.value = cat;
+      option.textContent = cat;
+      filterCategory.appendChild(option);
     });
   }
 
