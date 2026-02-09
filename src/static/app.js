@@ -30,6 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
       activitiesList.innerHTML = "";
       activitySelect.innerHTML = "";
 
+      // Re-add placeholder option so an activity is not preselected by default
+      const placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.textContent = "-- Select an activity --";
+      placeholderOption.disabled = true;
+      placeholderOption.selected = true;
+      activitySelect.appendChild(placeholderOption);
       // Get filter and sort values
       const selectedCategory = filterCategory.value;
       const selectedSort = sortActivities.value;
